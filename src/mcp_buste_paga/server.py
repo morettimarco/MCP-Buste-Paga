@@ -9,6 +9,7 @@ import os
 import pathlib
 
 from mcp.server.fastmcp import FastMCP
+from mcp.types import TextContent
 
 from .db import (
     get_employee_info,
@@ -26,6 +27,7 @@ from .parser import parse_pdf
 log = logging.getLogger(__name__)
 
 DB_PATH = pathlib.Path.home() / ".mcp-buste-paga" / "buste_paga.db"
+SKILL_PATH = pathlib.Path(__file__).parent.parent.parent / "skill.md"
 
 mcp = FastMCP(
     name="mcp-buste-paga",
@@ -40,6 +42,30 @@ mcp = FastMCP(
 
 def _json(obj: dict | list | None) -> str:
     return json.dumps(obj, indent=2, ensure_ascii=False, default=str)
+
+
+def _skill_text() -> str:
+    return SKILL_PATH.read_text(encoding="utf-8")
+
+
+@mcp.resource("buste-paga://interpretation-guide")
+def interpretation_guide() -> str:
+    """Full interpretation guide for reading and validating Italian INAZ payslip data.
+
+    Covers all tools, field meanings, voce codes, IRPEF/INPS validation chains,
+    conguaglio logic, and communication guidelines.
+    """
+    return _skill_text()
+
+
+@mcp.prompt()
+def use_interpretation_guide() -> list[TextContent]:
+    """Load the full payslip interpretation guide into the conversation.
+
+    Use this prompt before analysing payslip data to ensure correct
+    interpretation of all fields, voce codes, and validation rules.
+    """
+    return [TextContent(type="text", text=_skill_text())]
 
 
 @mcp.tool()
